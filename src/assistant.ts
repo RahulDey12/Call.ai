@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { SystemMessage } from 'langchain/schema';
-import {  } from 'langchain/callbacks';
 import { BufferMemory, ChatMessageHistory } from "langchain/memory";
 import { ConversationChain } from "langchain/chains";
 import { EventEmitter } from 'events'

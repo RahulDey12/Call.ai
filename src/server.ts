@@ -8,13 +8,14 @@ import { createClient } from '@supabase/supabase-js'
 
 import { Transcription } from './transcription.js';
 import { Assistant } from './assistant.js';
+import { TTS } from './text-to-speech.js';
 
 // Loads env
 dotenv.config()
 
 const app = express()
 
-app.post('/twiml', (_req, res) => {
+app.all('/twiml', (_req, res) => {
     const { VoiceResponse }  = twilio.twiml
 
     const response = new VoiceResponse()
@@ -33,9 +34,13 @@ const wss = new WebSocketServer({ server })
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE)
 
 wss.on('connection', async (ws) => {
+    let streamSid = ''
+
     const transcription = new Transcription()
     const assistant = new Assistant()
+    const tts = new TTS('XrExE9yKIg1WjnnlVkGX')
     transcription.subscribe()
+    tts.subscribe()
     
     transcription.on('transcription', (event) => {
         if(event.TranscriptEvent) {
@@ -54,7 +59,17 @@ wss.on('connection', async (ws) => {
     })
 
     assistant.on('token', token => {
-        console.log(token)
+        tts.push(token)
+    })
+
+    tts.on('audio', audio => {
+        ws.send(JSON.stringify({
+            event: 'media',
+            streamSid,
+            media: {
+                payload: audio
+            }
+        }))
     })
 
     ws.on('message', async (message) => {
@@ -70,6 +85,8 @@ wss.on('connection', async (ws) => {
             if(! call) {
                 ws.close()
             }
+
+            streamSid = data.start.streamSid
 
             assistant.startConversation(call.description)
             assistant.subscribe()
