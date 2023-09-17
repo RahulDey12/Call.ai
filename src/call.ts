@@ -11,7 +11,11 @@ const xmlUrl = `https://${process.env.APP_URL}/twiml`
 
 const client = new twilio.Twilio(accountSid, authToken);
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE, {
+    auth: {
+        persistSession: false,
+    }
+})
 
 const call = await client.calls.create({
     url: xmlUrl,

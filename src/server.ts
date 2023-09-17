@@ -31,7 +31,11 @@ app.all('/twiml', (_req, res) => {
 const server = createServer(app);
 
 const wss = new WebSocketServer({ server })
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE, {
+    auth: {
+        persistSession: false,
+    }
+})
 
 wss.on('connection', async (ws) => {
     let streamSid = ''
