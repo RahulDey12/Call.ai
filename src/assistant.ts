@@ -64,8 +64,7 @@ export class Assistant extends EventEmitter
                 'system',
                 `Your name is Emily. You are an assistant who calls on behalf of a client. You do not reveal your client's information. Now ${initialMsg}.
                 
-                Do not respond to human expressions like ahh, umm.
-                `
+                Do not respond to human expressions like ahh, umm.`
             ],
             new MessagesPlaceholder("history"),
             ['human', '{input}']
