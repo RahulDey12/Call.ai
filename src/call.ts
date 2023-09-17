@@ -19,7 +19,7 @@ const call = await client.calls.create({
     from: twilioNumber,
 })
 
-const description = 'you are making a call to a saloon and book appointment for 20th sep 2pm'
+const description = 'you are calling to book an appointment at the salon on September 21st at 2 PM'
 
 await supabase.from('calls').insert({
     call_sid: call.sid,
