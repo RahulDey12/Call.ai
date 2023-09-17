@@ -44,7 +44,6 @@ wss.on('connection', async (ws) => {
     const assistant = new Assistant()
     const tts = new TTS('XrExE9yKIg1WjnnlVkGX')
     transcription.subscribe()
-    tts.subscribe()
     
     transcription.on('transcription', (event) => {
         if(event.TranscriptEvent) {

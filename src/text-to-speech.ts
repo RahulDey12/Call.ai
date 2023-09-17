@@ -5,13 +5,18 @@ import { Duplex, PassThrough } from 'stream';
 import wavefile from 'wavefile'
 import { exec, execSync } from 'child_process';
 import { readFileSync, unlinkSync, writeFileSync } from 'fs';
+import WebSocket from 'ws';
 
 // Loads env
 dotenv.config()
 
 export class TTS extends EventEmitter
 {
-    protected stream: Duplex;
+    protected socket: WebSocket;
+
+    protected isSocketOpen: boolean;
+
+    protected tempTexts: string[] = []
 
     constructor(protected voice_id: string, protected model_id = 'eleven_monolingual_v1') {
         super()
@@ -19,31 +24,69 @@ export class TTS extends EventEmitter
 
     protected get xi_url(): string 
     {
-        return `https://api.elevenlabs.io/v1/text-to-speech/${this.voice_id}/stream?optimize_streaming_latency=4&output_format=pcm_16000`
+        return `wss://api.elevenlabs.io/v1/text-to-speech/${this.voice_id}/stream-input?optimize_streaming_latency=4&output_format=pcm_16000&model_id=${this.model_id}`
     }
 
-    protected getStream(): Duplex
+    public push(text: string): void
     {
-        if(this.stream) {
-            return this.stream;
+        if(this.isSocketOpen) {
+            this.socket.send(JSON.stringify({text}))
+
+            return;
         }
 
-        this.stream = new PassThrough();
-        return this.stream;
+        if(! this.socket) {
+            this.setupWebsocket()
+        }
+
+        this.tempTexts.push(text)
     }
 
-    public push(chunk: string): void
+    protected setupWebsocket()
     {
-        this.getStream().write(chunk)      
-    }
+        this.socket = new WebSocket(this.xi_url)
 
-    public subscribe(): void
-    {
-        (async () => {
-            for await (const chunk of this.getStream()) {
-                await this.tts(chunk.toString())
+        this.socket.on('open', _ => {
+            const bosMessage = {
+                text: " ",
+                voice_settings: {
+                    stability: 0.5,
+                    similarity_boost: true
+                },
+                generation_config: {
+                    chunk_length_schedule: [50]
+                },
+                xi_api_key: process.env.ELEVEN_LABS_KEY
             }
-        }).bind(this)()
+
+            this.socket.send(JSON.stringify(bosMessage))
+
+            if(this.tempTexts.length) {
+                this.tempTexts.forEach(text => {
+                    this.socket.send(JSON.stringify({text}))
+                })
+            }
+
+            this.tempTexts = []
+
+            this.isSocketOpen = true
+        })
+
+        this.socket.on('message', audio => {
+            const rawAudio = JSON.parse(audio.toString()).audio
+
+            if(! rawAudio) {
+                return;
+            }
+
+            const payload = this.encode(rawAudio)
+            this.emit('audio', payload)
+        })
+
+        this.socket.on('close', _ => {
+            delete this.socket
+            this.isSocketOpen = false
+        })
     }
 
     protected async tts(text: string) {
@@ -71,10 +114,10 @@ export class TTS extends EventEmitter
         this.emit('audio', payload)
     }
 
-    protected encode(audio: ArrayBuffer): string 
+    protected encode(audio: string): string 
     {
         const tmpPcmFile = `/tmp/${Math.random().toString(36).substring(2)}`;
-        writeFileSync(tmpPcmFile, Buffer.from(audio))
+        writeFileSync(tmpPcmFile, Buffer.from(audio, 'base64'))
 
         const tmpMuLawFile = `/tmp/${Math.random().toString(36).substring(2)}.ul`;
         execSync(`ffmpeg -f s16le -ar 16000 -ac 1 -i ${tmpPcmFile} -f mulaw -ar 8000 -ac 1 ${tmpMuLawFile}`);
@@ -84,16 +127,7 @@ export class TTS extends EventEmitter
 
         unlinkSync(tmpPcmFile);
         unlinkSync(tmpMuLawFile);
-        
-        // const wav = new wavefile.WaveFile()
-        // wav.fromScratch(1, 16000, '16', buffer)
-        // wav.toSampleRate(8000)
-        // // wav.toBitDepth('8m')
-        // wav.toMuLaw()
-        
-        // const audioData = wav.data as any;
 
-        // return Buffer.from(audioData.samples).toString('base64');
         return base64Content;
     }
 }
