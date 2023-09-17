@@ -92,7 +92,9 @@ export class TTS extends EventEmitter
         writeFileSync(tmpPcmFile, Buffer.from(audio, 'base64'))
 
         const tmpMuLawFile = `/tmp/${Math.random().toString(36).substring(2)}.ul`;
-        execSync(`ffmpeg -f s16le -ar 16000 -ac 1 -i ${tmpPcmFile} -f mulaw -ar 8000 -ac 1 ${tmpMuLawFile}`);
+        execSync(`ffmpeg -f s16le -ar 16000 -ac 1 -i ${tmpPcmFile} -f mulaw -ar 8000 -ac 1 ${tmpMuLawFile}`, {
+            stdio: 'ignore',
+        });
 
         const muLawBuffer = readFileSync(tmpMuLawFile);
         const base64Content = muLawBuffer.toString('base64');
