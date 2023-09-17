@@ -1,4 +1,5 @@
 {
+  "name": "call.ai",
   "private": true,
   "type": "module",
   "scripts": {
