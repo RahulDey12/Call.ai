@@ -1,9 +1,6 @@
-import axios from 'axios';
 import dotenv from 'dotenv';
 import { EventEmitter } from 'events';
-import { Duplex, PassThrough } from 'stream';
-import wavefile from 'wavefile'
-import { exec, execSync } from 'child_process';
+import { execSync } from 'child_process';
 import { readFileSync, unlinkSync, writeFileSync } from 'fs';
 import WebSocket from 'ws';
 
@@ -87,31 +84,6 @@ export class TTS extends EventEmitter
             delete this.socket
             this.isSocketOpen = false
         })
-    }
-
-    protected async tts(text: string) {
-        const { data: audio } = await axios({
-            method: 'POST',
-            url: this.xi_url,
-            data: {
-                text: text,
-                model_id: this.model_id,
-                voice_settings: {
-                    similarity_boost: 0.5,
-                    stability: 0
-                }
-            },
-            headers: {
-                Accept: "audio/mpeg",
-                "xi-api-key": process.env.ELEVEN_LABS_KEY,
-                "Content-Type": "application/json",
-            },
-
-            responseType: 'arraybuffer',
-        })
-
-        const payload = this.encode(audio)
-        this.emit('audio', payload)
     }
 
     protected encode(audio: string): string 
