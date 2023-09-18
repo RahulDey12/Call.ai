@@ -19,7 +19,7 @@ app.all('/twiml', (_req, res) => {
     const { VoiceResponse }  = twilio.twiml
 
     const response = new VoiceResponse()
-        response.connect().stream({
+    response.connect().stream({
         url: `wss://${process.env.APP_URL}/`
     })
 

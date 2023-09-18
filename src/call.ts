@@ -19,11 +19,12 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SER
 
 const call = await client.calls.create({
     url: xmlUrl,
+    record: true,
     to: '+919804281062',
     from: twilioNumber,
 })
 
-const description = 'you are calling to book an appointment at a tattoo shop for 25th september 10 AM. and Learn about which tattoo are trending and book most trending one'
+const description = 'you are calling to Book an hircut appointment for 19th September 10 AM - 12 PM.'
 
 await supabase.from('calls').insert({
     call_sid: call.sid,
